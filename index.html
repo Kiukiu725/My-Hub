@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>My Workspace Hub</title>
+  <!-- iOS / Android PWA 全螢幕與桌面 Icon 設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MyHub">
+  <meta name="theme-color" content="#F7F4EF">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #F7F4EF;
+      color: #2C2520;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang HK", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wood-card {
+      background: #FFFFFF;
+      border: 1px solid #E6DEC8;
+      box-shadow: 0 4px 12px rgba(139, 94, 60, 0.06);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .wood-card:active {
+      transform: scale(0.97);
+      background: #FDFBF7;
+    }
+    .pill-active {
+      background-color: #8B5E3C;
+      color: #FFFFFF;
+    }
+    .pill-inactive {
+      background-color: #EAE3D5;
+      color: #5C4D42;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-24">
+
+  <!-- 頂部問候與時間 -->
+  <header class="max-w-xl mx-auto px-5 pt-8 pb-4 flex justify-between items-end border-b border-[#E6DEC8]">
+    <div>
+      <p id="date-display" class="text-xs font-medium text-[#8B5E3C] tracking-wider uppercase mb-1"></p>
+      <h1 class="text-2xl font-bold tracking-tight text-[#2C2520]">私人工具總控台</h1>
+    </div>
+    <button onclick="openModal()" class="px-3.5 py-2 rounded-xl bg-[#8B5E3C] text-white text-sm font-medium shadow-sm active:scale-95 transition">
+      ＋ 新增 App
+    </button>
+  </header>
+
+  <main class="max-w-xl mx-auto px-5 pt-4">
+    <!-- 搜尋與分類 -->
+    <div class="mb-4">
+      <input type="text" id="search-input" oninput="renderApps()" placeholder="搜尋你嘅工具..." 
+        class="w-full px-4 py-2.5 rounded-xl bg-white border border-[#E6DEC8] text-sm focus:outline-none focus:border-[#8B5E3C]">
+    </div>
+
+    <div id="category-bar" class="flex gap-2 overflow-x-auto pb-3 mb-2 no-scrollbar"></div>
+
+    <!-- App 卡片網格 -->
+    <div id="app-grid" class="grid grid-cols-2 gap-3.5 mt-2"></div>
+
+    <!-- 底部備份與還原工具 -->
+    <div class="mt-10 pt-6 border-t border-[#E6DEC8] flex justify-between items-center text-xs text-[#7A6A5E]">
+      <span>資料儲存於本機 (Hub_Storage)</span>
+      <div class="space-x-3">
+        <button onclick="exportData()" class="underline hover:text-[#2C2520]">匯出設定</button>
+        <button onclick="importData()" class="underline hover:text-[#2C2520]">匯入設定</button>
+        <button onclick="resetDefaults()" class="text-red-700 underline">還原預設</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 新增/編輯 Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4 z-50">
+    <div class="bg-[#F7F4EF] border border-[#E6DEC8] rounded-2xl max-w-md w-full p-5 shadow-xl">
+      <h2 id="modal-title" class="text-lg font-bold mb-4">新增 / 編輯 App</h2>
+      <input type="hidden" id="edit-id">
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-medium mb-1">App 名稱</label>
+          <input id="app-name" type="text" placeholder="例如：家友記 HomeSync" class="w-full px-3 py-2 rounded-lg bg-white border border-[#E6DEC8]">
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs font-medium mb-1">Emoji 圖示</label>
+            <input id="app-icon" type="text" placeholder="🏠" class="w-full px-3 py-2 rounded-lg bg-white border border-[#E6DEC8] text-center">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-medium mb-1">分類</label>
+            <select id="app-cat" class="w-full px-3 py-2 rounded-lg bg-white border border-[#E6DEC8]">
+              <option value="訓練">⚡ 訓練與專注</option>
+              <option value="家庭">🏠 家庭與日常</option>
+              <option value="旅遊">✈️ 旅遊與分帳</option>
+              <option value="專案">💼 商業與專案</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">網址 (GitHub Pages URL 或相對路徑)</label>
+          <input id="app-url" type="text" placeholder="https://..." class="w-full px-3 py-2 rounded-lg bg-white border border-[#E6DEC8]">
+        </div>
+        <div>
+          <label class="block text-xs font-medium mb-1">簡短備註</label>
+          <input id="app-desc" type="text" placeholder="家務分配與日常開支同步" class="w-full px-3 py-2 rounded-lg bg-white border border-[#E6DEC8]">
+        </div>
+      </div>
+      <div class="flex justify-between items-center mt-6">
+        <button id="delete-btn" onclick="deleteApp()" class="text-xs text-red-600 font-medium hidden">刪除此 App</button>
+        <div class="flex gap-2 ml-auto">
+          <button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-[#EAE3D5] text-xs font-medium">取消</button>
+          <button onclick="saveApp()" class="px-4 py-2 rounded-lg bg-[#8B5E3C] text-white text-xs font-medium">儲存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'myhub_apps_v1'; // 獨立命名空間，防止撞 Key
+    const defaultApps = [
+      { id: '1', name: 'DriveReflex Pro', icon: '🚗', cat: '訓練', desc: '駕駛反應與視覺神經訓練', url: '#' },
+      { id: '2', name: 'FocusPulse', icon: '🎯', cat: '訓練', desc: '專注力節奏與抗干擾練習', url: '#' },
+      { id: '3', name: '家友記 HomeSync', icon: '🏠', cat: '家庭', desc: '屋企家務分配與共同開支', url: '#' },
+      { id: '4', name: 'TripSplitter', icon: '✈️', cat: '旅遊', desc: '自駕遊行程與外幣分帳計算', url: '#' }
+    ];
+
+    let apps = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultApps;
+    let currentCat = '全部';
+
+    function init() {
+      const now = new Date();
+      document.getElementById('date-display').textContent = now.toLocaleDateString('zh-HK', { month: 'long', day: 'numeric', weekday: 'short' });
+      renderCategories();
+      renderApps();
+    }
+
+    function renderCategories() {
+      const cats = ['全部', '訓練', '家庭', '旅遊', '專案'];
+      const bar = document.getElementById('category-bar');
+      bar.innerHTML = cats.map(c => `
+        <button onclick="setCat('${c}')" class="px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${currentCat === c ? 'pill-active' : 'pill-inactive'}">
+          ${c}
+        </button>
+      `).join('');
+    }
+
+    function setCat(c) {
+      currentCat = c;
+      renderCategories();
+      renderApps();
+    }
+
+    function renderApps() {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const grid = document.getElementById('app-grid');
+      const filtered = apps.filter(a => {
+        const matchCat = currentCat === '全部' || a.cat === currentCat;
+        const matchQ = a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q);
+        return matchCat && matchQ;
+      });
+
+      grid.innerHTML = filtered.map(a => `
+        <div class="wood-card rounded-2xl p-4 flex flex-col justify-between relative group">
+          <button onclick="event.stopPropagation(); openModal('${a.id}')" class="absolute top-3 right-3 text-xs text-[#8B5E3C] opacity-60 hover:opacity-100 px-1.5 py-0.5 rounded bg-[#F7F4EF]">
+            編輯
+          </button>
+          <a href="${a.url}" class="block flex-1">
+            <div class="text-3xl mb-2.5">${a.icon || '📱'}</div>
+            <span class="inline-block text-[10px] px-2 py-0.5 rounded bg-[#F7F4EF] text-[#8B5E3C] font-medium mb-1">${a.cat}</span>
+            <h3 class="font-bold text-sm text-[#2C2520] leading-snug">${a.name}</h3>
+            <p class="text-xs text-[#7A6A5E] mt-1 line-clamp-2">${a.desc}</p>
+          </a>
+        </div>
+      `).join('');
+    }
+
+    function openModal(id = null) {
+      const modal = document.getElementById('modal');
+      const delBtn = document.getElementById('delete-btn');
+      if (id) {
+        const app = apps.find(a => a.id === id);
+        document.getElementById('edit-id').value = app.id;
+        document.getElementById('app-name').value = app.name;
+        document.getElementById('app-icon').value = app.icon;
+        document.getElementById('app-cat').value = app.cat;
+        document.getElementById('app-url').value = app.url;
+        document.getElementById('app-desc').value = app.desc;
+        delBtn.classList.remove('hidden');
+      } else {
+        document.getElementById('edit-id').value = '';
+        document.getElementById('app-name').value = '';
+        document.getElementById('app-icon').value = '📱';
+        document.getElementById('app-cat').value = '訓練';
+        document.getElementById('app-url').value = '';
+        document.getElementById('app-desc').value = '';
+        delBtn.classList.add('hidden');
+      }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveApp() {
+      const id = document.getElementById('edit-id').value;
+      const newApp = {
+        id: id || Date.now().toString(),
+        name: document.getElementById('app-name').value || '未命名 App',
+        icon: document.getElementById('app-icon').value || '📱',
+        cat: document.getElementById('app-cat').value,
+        url: document.getElementById('app-url').value || '#',
+        desc: document.getElementById('app-desc').value || ''
+      };
+      if (id) {
+        apps = apps.map(a => a.id === id ? newApp : a);
+      } else {
+        apps.push(newApp);
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+      closeModal();
+      renderApps();
+    }
+
+    function deleteApp() {
+      const id = document.getElementById('edit-id').value;
+      apps = apps.filter(a => a.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+      closeModal();
+      renderApps();
+    }
+
+    function exportData() {
+      const str = JSON.stringify(apps);
+      navigator.clipboard.writeText(str).then(() => alert('設定 JSON 已複製到剪貼簿！你可以貼去備忘錄或者直接改入 HTML defaultApps 入面。'));
+    }
+
+    function importData() {
+      const input = prompt('請貼上之前匯出嘅 JSON 設定：');
+      if (input) {
+        try {
+          apps = JSON.parse(input);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+          renderApps();
+        } catch (e) {
+          alert('格式不正確！');
+        }
+      }
+    }
+
+    function resetDefaults() {
+      if (confirm('確定要還原預設清單？')) {
+        apps = defaultApps;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+        renderApps();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
